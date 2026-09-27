@@ -20,7 +20,7 @@
       <p class="lead reveal">献给愿意在一只瓶子、一片白墙和一束花前多停留一会儿的你。</p>
       <div class="preface-note">
         <div class="reveal"><h4>从拍下的每一张图开始</h4><p>完整保留 186 条现场图像记录，按图 001 至图 186 的顺序陈列：作品、局部、展签、墙文、器物及档案。186 张图并不等于 186 件不同的艺术作品。</p></div>
-        <div class="reveal"><h4>先读思想，再回到每一幅画</h4><p>十二节导论介绍生平、艺术学习与思想问题。展览按十三个展厅推进，每幅作品都附有观察与短解，并另有 121 篇深读，讲解形式选择、鉴赏意义与比较练习。</p></div>
+        <div class="reveal"><h4>先读思想，再回到每一幅画</h4><p>十二节导论介绍生平、艺术学习与思想问题。展览沿官方 32 个单元的展线推进，本站按笔记分为 13 章，每幅作品都附有观察与短解，并另有 121 篇深读，讲解形式选择、鉴赏意义与比较练习。</p></div>
         <div class="reveal"><h4>事实、图像与解读各有位置</h4><p>带《书名号》的题名、年份和媒介尽量依据可辨展签；其他标题是便于阅读的画面描述。分析与比较是本册的解读，不冒充艺术家原话。</p></div>
       </div>
     </div>
@@ -52,22 +52,33 @@
   D.chapters.forEach((c, ci) => {
     const works = figs.filter((f) => f.chapter === c.n);
     const id = 'hall-' + c.n;
-    rooms.push({ id, n: c.n, title: c.title, range: c.range });
+    rooms.push({ id, n: c.n, title: c.title, range: c.range, units: unitsIn(works) });
     html += `
-    <section class="room hall ${ci % 2 ? 'alt' : ''}" id="${id}" data-name="第 ${c.n} 展厅 · ${esc(c.title)}">
+    <section class="room hall ${ci % 2 ? 'alt' : ''}" id="${id}" data-name="第 ${c.n} 章 · ${esc(c.title)}">
       <div class="room-inner">
         <div class="hall-head reveal">
           <div class="hall-no">${c.n}</div>
-          <div><div class="hall-range">第 ${c.n} 展厅 · ${esc(c.range)}</div><h2 class="room-title">${esc(c.title)}</h2></div>
+          <div><div class="hall-range">第 ${c.n} 章 · ${esc(c.range)} · 官方单元 ${unitsIn(works).map((u) => u.no || '城市漫步').join('、')}</div><h2 class="room-title">${esc(c.title)}</h2></div>
         </div>
         <div class="hall-intro reveal">${c.intro.filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('')}</div>
       </div>
-      <div class="wall-wrap reveal">
-        <button class="wall-btn prev" aria-label="向左">‹</button>
-        <div class="wall">${works.map(workHTML).join('')}</div>
-        <button class="wall-btn next" aria-label="向右">›</button>
-        <div class="wall-hint">← 左右滑动浏览本厅 ${works.length} 幅 · 点击画作近看 →</div>
-      </div>
+      ${unitsIn(works).map((u) => `
+      <div class="unit reveal" id="unit-${u.from}">
+        <div class="room-inner unit-head">
+          <span class="unit-no">${u.no ? esc(u.no) : '—'}</span>
+          <div>
+            <div class="unit-cn">${esc(u.cn)}</div>
+            ${u.en ? `<div class="unit-en">${esc(u.en)}</div>` : ''}
+            <div class="unit-meta">${u.no ? `官方第 ${esc(u.no)} 单元` : '序章影片单元'} · 图 ${u.from}–${u.to} · ${u.works.length} 张${u.guess ? ' · <em>墙文未拍到，名称为作品内容描述</em>' : ''}</div>
+          </div>
+        </div>
+        <div class="wall-wrap">
+          <button class="wall-btn prev" aria-label="向左">‹</button>
+          <div class="wall">${u.works.map(workHTML).join('')}</div>
+          <button class="wall-btn next" aria-label="向右">›</button>
+        </div>
+      </div>`).join('')}
+      <div class="wall-hint">← 左右滑动浏览每面墙 · 点击画作近看 →</div>
       <div class="room-inner">${D.compares.filter((x) => x.after === c.n).map(compareHTML).join('')}</div>
     </section>`;
   });
@@ -94,6 +105,11 @@
 
   museum.innerHTML = html;
 
+  function unitsIn(works) {
+    const nums = new Set(works.map((w) => w.num));
+    return D.units.filter((u) => nums.has(u.from)).map((u) => ({ ...u, works: works.filter((w) => w.num >= u.from && w.num <= u.to) }));
+  }
+  function unitOf(num) { return D.units.find((u) => num >= u.from && num <= u.to); }
   function workHTML(f) {
     const [w, h] = f.size || [3, 4];
     return `<button class="work" data-fig="${f.num}" aria-label="图 ${f.num} ${esc(f.title)}">
@@ -152,7 +168,7 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  $('#mapList').innerHTML = rooms.map((r) => `<li><a href="#${r.id}"><span class="n">${r.n}</span><span class="t">${esc(r.title)}</span><span class="r">${esc(r.range)}</span></a></li>`).join('');
+  $('#mapList').innerHTML = rooms.map((r) => `<li><a href="#${r.id}"><span class="n">${r.n}</span><span class="t">${esc(r.title)}</span><span class="r">${esc(r.range)}</span></a>${r.units ? `<ul class="map-units">${r.units.map((u) => `<li><a href="#unit-${u.from}"><b>${u.no ? esc(u.no) : '—'}</b>${esc(u.cn)}${u.guess ? ' <i>*</i>' : ''}</a></li>`).join('')}</ul>` : ''}</li>`).join('') + '<li class="map-foot">* 墙文未拍到，名称为作品内容描述</li>';
   const map = $('#map');
   $('#mapBtn').onclick = () => { map.hidden = false; };
   $('#mapClose').onclick = () => { map.hidden = true; };
@@ -212,7 +228,8 @@
     const secs = f.secs.filter((s) => s[0] !== '再看一眼' && s[0] !== '对照原图');
     const look = f.secs.find((s) => s[0] === '再看一眼');
     vText.innerHTML = `
-      <div class="tag">第 ${f.chapter} 展厅 · ${esc(ch ? ch.title : '')}</div>
+      <div class="tag">第 ${f.chapter} 章 · ${esc(ch ? ch.title : '')}</div>
+      ${(u => u ? `<div class="tag" style="margin-top:4px">${u.no ? `官方第 ${esc(u.no)} 单元` : '序章'} · ${esc(u.cn)}${u.en ? ' · ' + esc(u.en) : ''}${u.guess ? '（墙文未拍到）' : ''}</div>` : '')(unitOf(num))}
       <div class="tag" style="margin-top:4px">图 ${num} · ${esc(f.type)}</div>
       <h2>${esc(f.title)}</h2>
       <p class="sub">${esc(f.sub)}</p>
@@ -291,7 +308,7 @@
       ${it.refs.length ? `<div class="refs" style="margin-top:40px">对照原图 ${it.refs.map((r) => `<button data-fig="${r}">图 ${r}</button>`).join('')}</div>` : ''}
       <div class="reader-nav">
         ${i > 0 ? `<button data-intro="${i - 1}">‹ 导论 ${esc(D.intros[i - 1].n)}</button>` : '<span></span>'}
-        ${i < D.intros.length - 1 ? `<button data-intro="${i + 1}">导论 ${esc(D.intros[i + 1].n)} ›</button>` : `<button data-go="hall-01">进入第 01 展厅 ›</button>`}
+        ${i < D.intros.length - 1 ? `<button data-intro="${i + 1}">导论 ${esc(D.intros[i + 1].n)} ›</button>` : `<button data-go="hall-01">进入第 01 章 ›</button>`}
       </div>`;
     reader.hidden = false; reader.scrollTop = 0; document.body.classList.add('locked');
   }
