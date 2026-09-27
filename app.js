@@ -234,7 +234,7 @@
       <div class="tag" style="margin-top:4px">${figLabel(f)} · ${esc(f.type)}</div>
       <h2>${esc(f.title)}</h2>
       <p class="sub">${esc(f.sub)}</p>
-      ${f.extra ? `<div class="look">这张是观展当天拍摄、原观展笔记未收录的补充照片，按拍摄顺序放回了它在展线上的位置，暂无逐画解读。标题为画面描述，墙文与引语标题取自现场原文。</div>` : ''}
+      ${f.extra ? `<div class="look">这是观展当天拍摄、原观展笔记未收录的补充照片，已按拍摄顺序放回展线原位。带《书名号》的题名、年份与材质取自现场展签；其余为画面描述。下方文字为本站补写的解读，并非原观展笔记内容。</div>` : ''}
       ${secs.map((s) => `<h3>${esc(s[0])}</h3><p>${linkFigs(esc(s[1]))}</p>`).join('')}
       ${look ? `<div class="look">再看一眼 · ${linkFigs(esc(look[1]))}</div>` : ''}
       ${dp ? `<div class="deepread">
