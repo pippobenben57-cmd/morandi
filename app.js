@@ -2,7 +2,9 @@
   const D = window.EXHIBIT;
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const figs = Object.keys(D.figures).sort().map((k) => D.figures[k]);
+  const figs = Object.values(D.figures).sort((a, b) => a.key - b.key);
+  const nOrig = figs.filter((f) => !f.extra).length, nExtra = figs.length - nOrig;
+  const figLabel = (f) => f.extra ? '补充照片' : `图 ${f.num}`;
   const order = figs.map((f) => f.num);
   const museum = $('#museum');
 
@@ -19,7 +21,7 @@
       <h2 class="room-title reveal">从完整记录，走向深入的鉴赏</h2>
       <p class="lead reveal">献给愿意在一只瓶子、一片白墙和一束花前多停留一会儿的你。</p>
       <div class="preface-note">
-        <div class="reveal"><h4>从拍下的每一张图开始</h4><p>完整保留 186 条现场图像记录，按图 001 至图 186 的顺序陈列：作品、局部、展签、墙文、器物及档案。186 张图并不等于 186 件不同的艺术作品。</p></div>
+        <div class="reveal"><h4>从拍下的每一张图开始</h4><p>完整保留笔记中的 186 条现场图像记录，并补充 ${nExtra} 张当天拍摄、笔记未收录的照片，全部按现场参观顺序陈列：作品、局部、展签、墙文、器物及档案。照片数量并不等于艺术作品数量。</p></div>
         <div class="reveal"><h4>先读思想，再回到每一幅画</h4><p>十二节导论介绍生平、艺术学习与思想问题。展览沿官方 32 个单元的展线推进，本站按笔记分为 13 章，每幅作品都附有观察与短解，并另有 121 篇深读，讲解形式选择、鉴赏意义与比较练习。</p></div>
         <div class="reveal"><h4>事实、图像与解读各有位置</h4><p>带《书名号》的题名、年份和媒介尽量依据可辨展签；其他标题是便于阅读的画面描述。分析与比较是本册的解读，不冒充艺术家原话。</p></div>
       </div>
@@ -58,7 +60,7 @@
       <div class="room-inner">
         <div class="hall-head reveal">
           <div class="hall-no">${c.n}</div>
-          <div><div class="hall-range">第 ${c.n} 章 · ${esc(c.range)} · 官方单元 ${unitsIn(works).map((u) => u.no || '城市漫步').join('、')}</div><h2 class="room-title">${esc(c.title)}</h2></div>
+          <div><div class="hall-range">第 ${c.n} 章 · ${esc(c.range)} · 官方单元 ${unitsIn(works).map((u) => u.no || u.cn).join('、')}</div><h2 class="room-title">${esc(c.title)}</h2></div>
         </div>
         <div class="hall-intro reveal">${c.intro.filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('')}</div>
       </div>
@@ -69,7 +71,7 @@
           <div>
             <div class="unit-cn">${esc(u.cn)}</div>
             ${u.en ? `<div class="unit-en">${esc(u.en)}</div>` : ''}
-            <div class="unit-meta">${u.no ? `官方第 ${esc(u.no)} 单元` : '序章影片单元'} · 图 ${u.from}–${u.to} · ${u.works.length} 张${u.guess ? ' · <em>墙文未拍到，名称为作品内容描述</em>' : ''}</div>
+            <div class="unit-meta">${u.no ? `官方第 ${esc(u.no)} 单元` : '无编号展区'} · ${u.works.length} 张照片${u.works.some((w) => w.extra) ? ` · 含 ${u.works.filter((w) => w.extra).length} 张补充照片` : ''}</div>
           </div>
         </div>
         <div class="wall-wrap">
@@ -106,15 +108,14 @@
   museum.innerHTML = html;
 
   function unitsIn(works) {
-    const nums = new Set(works.map((w) => w.num));
-    return D.units.filter((u) => nums.has(u.from)).map((u) => ({ ...u, works: works.filter((w) => w.num >= u.from && w.num <= u.to) }));
+    return D.units.map((u) => ({ ...u, works: works.filter((w) => w.key >= u.from && w.key < u.to + 1) })).filter((u) => u.works.length);
   }
-  function unitOf(num) { return D.units.find((u) => num >= u.from && num <= u.to); }
+  function unitOf(num) { const k = D.figures[num].key; return D.units.find((u) => k >= u.from && k < u.to + 1); }
   function workHTML(f) {
     const [w, h] = f.size || [3, 4];
-    return `<button class="work" data-fig="${f.num}" aria-label="图 ${f.num} ${esc(f.title)}">
+    return `<button class="work" data-fig="${f.num}" aria-label="${figLabel(f)} ${esc(f.title)}">
       <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="thumb/${f.num}.jpg" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
-      <div class="label"><span class="no">图 ${f.num} · ${esc(f.type)}</span><span class="ti">${esc(f.title)}</span>${esc(f.sub)}${f.hasDeep ? '<br><span class="deep">含逐画精讲</span>' : ''}</div>
+      <div class="label"><span class="no">${figLabel(f)} · ${esc(f.type)}</span><span class="ti">${esc(f.title)}</span>${esc(f.sub)}${f.hasDeep ? '<br><span class="deep">含逐画精讲</span>' : ''}</div>
     </button>`;
   }
   function compareHTML(c) {
@@ -168,7 +169,7 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  $('#mapList').innerHTML = rooms.map((r) => `<li><a href="#${r.id}"><span class="n">${r.n}</span><span class="t">${esc(r.title)}</span><span class="r">${esc(r.range)}</span></a>${r.units ? `<ul class="map-units">${r.units.map((u) => `<li><a href="#unit-${u.from}"><b>${u.no ? esc(u.no) : '—'}</b>${esc(u.cn)}${u.guess ? ' <i>*</i>' : ''}</a></li>`).join('')}</ul>` : ''}</li>`).join('') + '<li class="map-foot">* 墙文未拍到，名称为作品内容描述</li>';
+  $('#mapList').innerHTML = rooms.map((r) => `<li><a href="#${r.id}"><span class="n">${r.n}</span><span class="t">${esc(r.title)}</span><span class="r">${esc(r.range)}</span></a>${r.units ? `<ul class="map-units">${r.units.map((u) => `<li><a href="#unit-${u.from}"><b>${u.no ? esc(u.no) : '—'}</b>${esc(u.cn)}</a></li>`).join('')}</ul>` : ''}</li>`).join('');
   const map = $('#map');
   $('#mapBtn').onclick = () => { map.hidden = false; };
   $('#mapClose').onclick = () => { map.hidden = true; };
@@ -224,15 +225,16 @@
     const img = new Image();
     img.onload = () => { vImg.src = img.src; vImg.alt = f.title; vImg.classList.remove('fading'); };
     img.src = `img/${num}.jpg`;
-    vCount.textContent = `${num} / 186`;
+    vCount.textContent = `${i + 1} / ${order.length}`;
     const secs = f.secs.filter((s) => s[0] !== '再看一眼' && s[0] !== '对照原图');
     const look = f.secs.find((s) => s[0] === '再看一眼');
     vText.innerHTML = `
       <div class="tag">第 ${f.chapter} 章 · ${esc(ch ? ch.title : '')}</div>
-      ${(u => u ? `<div class="tag" style="margin-top:4px">${u.no ? `官方第 ${esc(u.no)} 单元` : '序章'} · ${esc(u.cn)}${u.en ? ' · ' + esc(u.en) : ''}${u.guess ? '（墙文未拍到）' : ''}</div>` : '')(unitOf(num))}
-      <div class="tag" style="margin-top:4px">图 ${num} · ${esc(f.type)}</div>
+      ${(u => u ? `<div class="tag" style="margin-top:4px">${u.no ? `官方第 ${esc(u.no)} 单元` : '序章'} · ${esc(u.cn)}${u.en ? ' · ' + esc(u.en) : ''}</div>` : '')(unitOf(num))}
+      <div class="tag" style="margin-top:4px">${figLabel(f)} · ${esc(f.type)}</div>
       <h2>${esc(f.title)}</h2>
       <p class="sub">${esc(f.sub)}</p>
+      ${f.extra ? `<div class="look">这张是观展当天拍摄、原观展笔记未收录的补充照片，按拍摄顺序放回了它在展线上的位置，暂无逐画解读。标题为画面描述，墙文与引语标题取自现场原文。</div>` : ''}
       ${secs.map((s) => `<h3>${esc(s[0])}</h3><p>${linkFigs(esc(s[1]))}</p>`).join('')}
       ${look ? `<div class="look">再看一眼 · ${linkFigs(esc(look[1]))}</div>` : ''}
       ${dp ? `<div class="deepread">
@@ -335,7 +337,7 @@
   });
 
   // deep link: #fig-123 opens that work directly (after entering)
-  const m = location.hash.match(/^#fig-(\d{3})$/);
+  const m = location.hash.match(/^#fig-(s?\d{3,4})$/);
   document.body.classList.add('locked');
   if (m) { entrance.hidden = true; document.body.classList.remove('locked'); openFig(m[1], false); }
   onScroll();
