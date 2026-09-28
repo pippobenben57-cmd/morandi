@@ -123,7 +123,7 @@
     const [w, h] = f.size || [3, 4];
     return `<button class="work" data-fig="${f.num}" aria-label="${esc(f.title)}">
       <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="thumb/${f.num}.jpg" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
-      <div class="label">${f.kind ? `<span class="no">${esc(f.kind)}</span>` : ''}<span class="ti">${esc(f.title)}</span>${f.sub ? `<span class="sb">${esc(f.sub)}</span>` : ''}${D.deep[f.num] ? '<span class="deep">有细读</span>' : ''}</div>
+      <div class="label"><span class="no">图 ${f.disp}${f.kind ? ' · ' + esc(f.kind) : ''}</span><span class="ti">${esc(f.title)}</span>${f.sub ? `<span class="sb">${esc(f.sub)}</span>` : ''}${D.deep[f.num] ? '<span class="deep">有细读</span>' : ''}</div>
     </button>`;
   }
   function compareHTML(c) {
@@ -134,7 +134,7 @@
     </div>`;
   }
   function linkFigs(s) {
-    return s.replace(/图\s?(\d{3})/g, (m, n) => D.figures[n] ? `<a href="#fig-${n}" data-fig="${n}" class="figlink">${m}</a>` : m);
+    return s.replace(/图(\d{1,3})/g, (m, n) => D.disp[n] ? `<a href="#fig-${D.disp[n]}" data-fig="${D.disp[n]}" class="figlink">${m}</a>` : m);
   }
 
   /* ---------------- lazy images & reveal ---------------- */
@@ -235,7 +235,7 @@
     const look = f.secs.find((s) => s[0] === '再看一眼');
     vText.innerHTML = `
       ${u ? `<div class="tag">${esc(unitName(u))}</div>` : ''}
-      ${f.kind ? `<div class="tag kind">${esc(f.kind)}</div>` : ''}
+      <div class="tag kind">图 ${f.disp}${f.kind ? ' · ' + esc(f.kind) : ''}</div>
       <h2>${esc(f.title)}</h2>
       ${f.sub ? `<p class="sub">${esc(f.sub)}</p>` : '<div style="height:12px"></div>'}
       ${secs.map((s) => `<h3>${esc(s[0])}</h3><p>${linkFigs(esc(s[1]))}</p>`).join('')}
