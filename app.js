@@ -8,6 +8,9 @@
   const unitOfKey = (k) => D.units.find((u) => k >= u.from && k < u.to + 1);
   const unitOf = (num) => unitOfKey(D.figures[num].key);
   const unitName = (u) => (u.no ? `第 ${u.no} 单元 · ` : '') + u.cn;
+  // 大图：手机用 1400 像素版（img_m），电脑用 2400 像素版（img）
+  const BIG = window.innerWidth < 900 ? 'img_m' : 'img';
+  const bigSrc = (n) => `${BIG}/${n}.jpg`;
 
   /* ---------------- 开场画与精选导览 ---------------- */
   const KEY = '146'; // 《静物》1956，开场与终场同一幅
@@ -44,7 +47,7 @@
     <div class="room-inner">
       <p class="kicker reveal">Before Everything</p>
       <figure class="key-work reveal">
-        <button data-fig="${KEY}" class="key-img"><img src="img/${KEY}.jpg" alt="${esc(kf.title)}"></button>
+        <button data-fig="${KEY}" class="key-img"><img src="${bigSrc(KEY)}" alt="${esc(kf.title)}"></button>
         <figcaption>${esc(kf.title)} · ${esc(kf.sub)}</figcaption>
       </figure>
       <p class="key-q reveal">先看一会儿。<br>你最先注意到的是瓶子，还是它们之间的距离？</p>
@@ -127,7 +130,7 @@
     <div class="room-inner">
       <p class="kicker reveal">Da Capo</p>
       <figure class="key-work reveal">
-        <button data-fig="${KEY}" class="key-img"><img data-src="img/${KEY}.jpg" alt="${esc(kf.title)}"></button>
+        <button data-fig="${KEY}" class="key-img"><img data-src="${bigSrc(KEY)}" alt="${esc(kf.title)}"></button>
         <figcaption>${esc(kf.title)} · ${esc(kf.sub)}</figcaption>
       </figure>
       <p class="key-q reveal">又回到了最初这一幅。<br>现在，你看见了什么不同？</p>
@@ -192,25 +195,38 @@
   }
 
   /* ---------------- lazy images & reveal ---------------- */
-  // 以“整面墙 / 整个区块”为单位提前加载：一面墙接近屏幕（约一屏半之内）时，墙上所有画一起开始下载，
-  // 左右滑动时不必再等。先绑定 onload 再设 src，已缓存的图片也会正确显示。
-  function loadImg(img) {
-    if (!img.dataset.src) return;
-    const done = () => img.classList.add('loaded');
-    img.onload = done; img.onerror = done;
-    img.src = img.dataset.src;
-    delete img.dataset.src;
-    if (img.complete && img.naturalWidth) done();
+  // 图片排队加载：同一时间最多下载 4 张；新进入视野的区块排到队首，
+  // 同一面墙内按从左到右的顺序，眼前的画总是最先出现。
+  const queue = []; let active = 0; const MAXC = 4;
+  function pump() {
+    while (active < MAXC && queue.length) {
+      const img = queue.shift();
+      if (!img.dataset.src) continue;
+      active++;
+      const done = () => { img.classList.add('loaded'); active--; pump(); };
+      img.onload = done; img.onerror = done;
+      img.src = img.dataset.src;
+      delete img.dataset.src;
+    }
+  }
+  function enqueue(imgs) {
+    const list = [...imgs].filter((i) => i.dataset.src);
+    list.forEach((i) => { const k = queue.indexOf(i); if (k >= 0) queue.splice(k, 1); });
+    queue.unshift(...list); pump();
   }
   const io = new IntersectionObserver((ents) => {
-    ents.forEach((e) => {
-      if (!e.isIntersecting) return;
-      e.target.querySelectorAll('img[data-src]').forEach(loadImg);
+    ents.filter((e) => e.isIntersecting).reverse().forEach((e) => {
+      enqueue(e.target.querySelectorAll('img[data-src]'));
       io.unobserve(e.target);
     });
-  }, { rootMargin: '150% 0px' });
+  }, { rootMargin: '100% 0px' });
   document.querySelectorAll('.wall-wrap, .compare, .key-work').forEach((b) => io.observe(b));
-  document.querySelectorAll('img[data-src]').forEach((img) => { if (!img.closest('.wall-wrap, .compare, .key-work')) loadImg(img); });
+  enqueue([...document.querySelectorAll('img[data-src]')].filter((img) => !img.closest('.wall-wrap, .compare, .key-work')));
+  // 左右滑动时，把墙上即将出现的画提到队首
+  document.querySelectorAll('.wall').forEach((wall) => wall.addEventListener('scroll', () => {
+    const right = wall.getBoundingClientRect().right + window.innerWidth;
+    enqueue([...wall.querySelectorAll('img[data-src]')].filter((i) => i.getBoundingClientRect().left < right));
+  }, { passive: true }));
   document.querySelectorAll('.compare-pair img, .key-img img').forEach((i) => i.classList.add('loaded'));
   const ro = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: 0.06 });
   document.querySelectorAll('.reveal').forEach((el) => ro.observe(el));
@@ -336,7 +352,7 @@
     const f = D.figures[num], dp = D.deep[num], u = unitOf(num);
     viewer.hidden = false; document.body.classList.add('locked');
     vImg.classList.add('fading');
-    const img = new Image(), want = `img/${num}.jpg`;
+    const img = new Image(), want = bigSrc(num);
     vImg.dataset.want = want;
     img.onload = () => { if (vImg.dataset.want !== want) return; vImg.src = img.src; vImg.alt = f.title; vImg.classList.remove('fading'); };
     img.src = want;
@@ -364,7 +380,7 @@
     vText.scrollTop = 0;
     if (push) history.replaceState(null, '', '#fig-' + num);
     const nb = inTour ? [TOUR[tour + 1], TOUR[tour - 1]].map((x) => x && x[0]) : [order[i + 1], order[i - 1]];
-    nb.forEach((n) => { if (n) new Image().src = `img/${n}.jpg`; });
+    nb.forEach((n) => { if (n) new Image().src = bigSrc(n); });
     if (last) playReturn();
     if (auto) startTimer();
   }
