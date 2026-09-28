@@ -10,7 +10,8 @@
   const unitName = (u) => (u.no ? `第 ${u.no} 单元 · ` : '') + u.cn;
   // 大图：手机用 1400 像素版（img_m），电脑用 2400 像素版（img）
   const BIG = window.innerWidth < 900 ? 'img_m' : 'img';
-  const bigSrc = (n) => `${BIG}/${n}.jpg`;
+  const IV = '?i=3'; // 图片版本号：更换图片后递增，避免手机显示缓存里的旧图
+  const bigSrc = (n) => `${BIG}/${n}.jpg${IV}`;
 
   /* ---------------- 开场画与精选导览 ---------------- */
   const KEY = '146'; // 《静物》1956，开场与终场同一幅
@@ -179,14 +180,14 @@
   function workHTML(f) {
     const [w, h] = f.size || [3, 4];
     return `<button class="work" data-fig="${f.num}" aria-label="${esc(f.title)}">
-      <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="thumb/${f.num}.jpg" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
+      <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="thumb/${f.num}.jpg${IV}" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
       <div class="label"><span class="no">图 ${f.disp}${f.kind ? ' · ' + esc(f.kind) : ''}</span><span class="ti">${esc(f.title)}</span>${f.sub ? `<span class="sb">${esc(f.sub)}</span>` : ''}${D.deep[f.num] ? '<span class="deep">有细读</span>' : ''}</div>
     </button>`;
   }
   function compareHTML(c) {
     return `<div class="compare reveal">
       <p class="kicker">比较</p><h3>${esc(c.title)}</h3>
-      <div class="compare-pair">${c.pairs.filter((p) => D.figures[p.num]).map((p) => `<button data-fig="${p.num}"><img data-src="thumb/${p.num}.jpg" alt="${esc(D.figures[p.num].title)}"><div class="cap"><b>${esc(D.figures[p.num].title)}</b>${esc(p.cap)}</div></button>`).join('')}</div>
+      <div class="compare-pair">${c.pairs.filter((p) => D.figures[p.num]).map((p) => `<button data-fig="${p.num}"><img data-src="thumb/${p.num}.jpg${IV}" alt="${esc(D.figures[p.num].title)}"><div class="cap"><b>${esc(D.figures[p.num].title)}</b>${esc(p.cap)}</div></button>`).join('')}</div>
       <div class="compare-text">${c.text.filter(Boolean).map((t) => `<p>${linkFigs(esc(t))}</p>`).join('')}</div>
     </div>`;
   }
