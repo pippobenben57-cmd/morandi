@@ -9,9 +9,12 @@
   const unitOf = (num) => unitOfKey(D.figures[num].key);
   const unitName = (u) => (u.no ? `第 ${u.no} 单元 · ` : '') + u.cn;
   // 大图：手机用 1400 像素版（img_m），电脑用 2400 像素版（img）
-  const BIG = window.innerWidth < 900 ? 'img_m' : 'img';
-  const IV = '?i=3'; // 图片版本号：更换图片后递增，避免手机显示缓存里的旧图
-  const bigSrc = (n) => `${BIG}/${n}.jpg${IV}`;
+  // 图片与音乐优先从国内镜像读取（素材仓库 morandi-assets，按提交号固定版本）；
+  // 镜像打不开或 8 秒内没加载完，就自动退回本站（GitHub Pages）上的同名文件。
+  const MIRROR = 'https://cdn.jsdmirror.com/gh/pippobenben57-cmd/morandi-assets@92fd421/';
+  const asset = (p) => MIRROR + p;
+  const local = (u) => (u.startsWith(MIRROR) ? u.slice(MIRROR.length) : u);
+  const bigSrc = (n) => asset(`img_m/${n}.jpg`);
 
   /* ---------------- 开场画与精选导览 ---------------- */
   const KEY = '146'; // 《静物》1956，开场与终场同一幅
@@ -48,7 +51,7 @@
     <div class="room-inner">
       <p class="kicker reveal">Before Everything</p>
       <figure class="key-work reveal">
-        <button data-fig="${KEY}" class="key-img"><img src="${bigSrc(KEY)}" alt="${esc(kf.title)}"></button>
+        <button data-fig="${KEY}" class="key-img"><img data-src="${bigSrc(KEY)}" alt="${esc(kf.title)}"></button>
         <figcaption>${esc(kf.title)} · ${esc(kf.sub)}</figcaption>
       </figure>
       <p class="key-q reveal">先看一会儿。<br>你最先注意到的是瓶子，还是它们之间的距离？</p>
@@ -180,14 +183,14 @@
   function workHTML(f) {
     const [w, h] = f.size || [3, 4];
     return `<button class="work" data-fig="${f.num}" aria-label="${esc(f.title)}">
-      <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="thumb/${f.num}.jpg${IV}" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
+      <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="${asset(`thumb/${f.num}.jpg`)}" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
       <div class="label"><span class="no">图 ${f.disp}${f.kind ? ' · ' + esc(f.kind) : ''}</span><span class="ti">${esc(f.title)}</span>${f.sub ? `<span class="sb">${esc(f.sub)}</span>` : ''}${D.deep[f.num] ? '<span class="deep">有细读</span>' : ''}</div>
     </button>`;
   }
   function compareHTML(c) {
     return `<div class="compare reveal">
       <p class="kicker">比较</p><h3>${esc(c.title)}</h3>
-      <div class="compare-pair">${c.pairs.filter((p) => D.figures[p.num]).map((p) => `<button data-fig="${p.num}"><img data-src="thumb/${p.num}.jpg${IV}" alt="${esc(D.figures[p.num].title)}"><div class="cap"><b>${esc(D.figures[p.num].title)}</b>${esc(p.cap)}</div></button>`).join('')}</div>
+      <div class="compare-pair">${c.pairs.filter((p) => D.figures[p.num]).map((p) => `<button data-fig="${p.num}"><img data-src="${asset(`thumb/${p.num}.jpg`)}" alt="${esc(D.figures[p.num].title)}"><div class="cap"><b>${esc(D.figures[p.num].title)}</b>${esc(p.cap)}</div></button>`).join('')}</div>
       <div class="compare-text">${c.text.filter(Boolean).map((t) => `<p>${linkFigs(esc(t))}</p>`).join('')}</div>
     </div>`;
   }
@@ -204,9 +207,16 @@
       const img = queue.shift();
       if (!img.dataset.src) continue;
       active++;
-      const done = () => { img.classList.add('loaded'); active--; pump(); };
-      img.onload = done; img.onerror = done;
+      let fin = false, t;
+      const done = () => { if (fin) return; fin = true; clearTimeout(t); img.classList.add('loaded'); active--; pump(); };
+      const fallback = () => {
+        clearTimeout(t);
+        if (!fin && img.src.startsWith(MIRROR)) { img.src = local(img.src); t = setTimeout(done, 30000); } else done();
+      };
+      img.dataset.q = '1';
+      img.onload = done; img.onerror = fallback;
       img.src = img.dataset.src;
+      t = setTimeout(fallback, 8000);
       delete img.dataset.src;
     }
   }
@@ -228,6 +238,10 @@
     const right = wall.getBoundingClientRect().right + window.innerWidth;
     enqueue([...wall.querySelectorAll('img[data-src]')].filter((i) => i.getBoundingClientRect().left < right));
   }, { passive: true }));
+  document.addEventListener('error', (e) => {
+    const t = e.target;
+    if (t && t.tagName === 'IMG' && !t.dataset.q && t.src.startsWith(MIRROR)) t.src = local(t.src);
+  }, true);
   document.querySelectorAll('.compare-pair img, .key-img img').forEach((i) => i.classList.add('loaded'));
   const ro = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: 0.06 });
   document.querySelectorAll('.reveal').forEach((el) => ro.observe(el));
@@ -283,7 +297,8 @@
      展览配乐（默认）：开场咏叹调播放一遍；终场“再看一次”时播放《咏叹调返始》。
      持续伴听：两首交替循环。音乐只由入口选择和音乐开关控制。 */
   const bgm = $('#bgm'), musicBtn = $('#musicBtn');
-  const ARIA = 'audio/aria.mp3', DACAPO = 'audio/aria_dacapo.mp3';
+  const ARIA = asset('audio/aria.mp3'), DACAPO = asset('audio/aria_dacapo.mp3');
+  bgm.addEventListener('error', () => { if (bgm.src.startsWith(MIRROR)) { bgm.src = local(bgm.src); if (musicOn) bgm.play().then(() => musicBtn.classList.add('playing')).catch(() => {}); } });
   let musicOn = false, mode = 'exhibit';
   try { mode = localStorage.getItem('morandi-music-mode') || 'exhibit'; } catch (e) {}
   let fadeT;
@@ -296,7 +311,7 @@
     }, 60);
   }
   function play(src) {
-    if (src && !bgm.src.endsWith(src)) bgm.src = src;
+    if (src && bgm.src !== src && local(bgm.src) !== local(src) && !bgm.src.endsWith('/' + local(src))) bgm.src = src;
     bgm.volume = 0;
     const p = bgm.play();
     if (p) p.then(() => { musicBtn.classList.add('playing'); fadeTo(0.55); }).catch(() => {});
@@ -304,7 +319,7 @@
   function stopMusic() { musicBtn.classList.remove('playing'); fadeTo(0, () => bgm.pause()); }
   bgm.addEventListener('ended', () => {
     musicBtn.classList.remove('playing');
-    if (mode === 'loop' && musicOn) play(bgm.src.endsWith(ARIA) ? DACAPO : ARIA);
+    if (mode === 'loop' && musicOn) play(/\/aria\.mp3$/.test(bgm.src) ? DACAPO : ARIA);
   });
   function playReturn() { if (musicOn) play(DACAPO); }
   musicBtn.onclick = () => {
@@ -355,7 +370,9 @@
     vImg.classList.add('fading');
     const img = new Image(), want = bigSrc(num);
     vImg.dataset.want = want;
-    img.onload = () => { if (vImg.dataset.want !== want) return; vImg.src = img.src; vImg.alt = f.title; vImg.classList.remove('fading'); };
+    img.onload = () => { if (vImg.dataset.want !== want) return; clearTimeout(ft); vImg.src = img.src; vImg.alt = f.title; vImg.classList.remove('fading'); };
+    const fb = () => { clearTimeout(ft); if (img.src.startsWith(MIRROR)) img.src = local(img.src); };
+    img.onerror = fb; const ft = setTimeout(fb, 8000);
     img.src = want;
     const inTour = tour >= 0;
     vCount.textContent = inTour ? `精选 ${tour + 1} / ${TOUR.length}` : `${i + 1} / ${order.length}`;
