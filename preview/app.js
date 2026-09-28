@@ -382,16 +382,22 @@
   $('#vNext').onclick = () => step(1);
   $('#vClose').onclick = closeViewer;
 
-  // 自动换画：每幅约 16 秒，不开音乐、不滚动文字；观众一开始阅读就自动暂停
+  // 自动换画：不开音乐；主要介绍随时间慢慢滚动（细读部分留给观众手动阅读）；
+  // 停留时间按主要介绍的字数计算（16—50 秒）；观众一碰文字就自动暂停
   const vAuto = $('#vAuto'), vTimer = $('#vTimer');
-  const DUR = 16000;
   let timerStart = 0, raf;
   function startTimer() {
     cancelAnimationFrame(raf);
     timerStart = performance.now();
+    const deep = vText.querySelector('.deepread');
+    const mainChars = (deep ? vText.textContent.length - deep.textContent.length : vText.textContent.length);
+    const DUR = Math.max(16000, Math.min(50000, 8000 + mainChars * 90));
+    const deepTop = deep ? deep.getBoundingClientRect().top - vText.getBoundingClientRect().top + vText.scrollTop : 0;
     const tick = (t) => {
       const p = (t - timerStart) / DUR;
       vTimer.style.width = Math.min(100, p * 100) + '%';
+      const end = deep ? Math.max(0, deepTop - vText.clientHeight * 0.6) : vText.scrollHeight - vText.clientHeight;
+      if (end > 0 && p > 0.12) vText.scrollTop = Math.min(end, end * Math.min(1, (p - 0.12) / 0.78));
       if (p >= 1) { step(1); return; }
       raf = requestAnimationFrame(tick);
     };
