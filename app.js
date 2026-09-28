@@ -3,130 +3,138 @@
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const figs = Object.values(D.figures).sort((a, b) => a.key - b.key);
-  const nOrig = figs.filter((f) => !f.extra).length, nExtra = figs.length - nOrig;
-  const figLabel = (f) => f.extra ? '补充照片' : `图 ${f.num}`;
   const order = figs.map((f) => f.num);
   const museum = $('#museum');
+  const unitOfKey = (k) => D.units.find((u) => k >= u.from && k < u.to + 1);
+  const unitOf = (num) => unitOfKey(D.figures[num].key);
+  const unitName = (u) => (u.no ? `第 ${u.no} 单元 · ` : '') + u.cn;
 
-  /* ---------------- build rooms ---------------- */
-  const rooms = []; // {id, n, title, range}
+  /* ---------------- build ---------------- */
+  const rooms = []; // map entries
   let html = '';
 
-  // 序厅
-  rooms.push({ id: 'preface', n: '序', title: '序厅 · 先认识他', range: '生平 · 关键词 · 十二节导论' });
+  // 展览介绍
+  const F = D.front;
+  rooms.push({ id: 'about', n: '展', title: '关于这个展览', range: '乔治·莫兰迪：独白 · 浦东美术馆 2026' });
   html += `
-  <section class="room" id="preface" data-name="序厅 · 先认识他">
+  <section class="room" id="about" data-name="关于这个展览">
     <div class="room-inner">
-      <p class="kicker reveal">Prologue · 写在前面</p>
-      <h2 class="room-title reveal">从完整记录，走向深入的鉴赏</h2>
-      <p class="lead reveal">献给愿意在一只瓶子、一片白墙和一束花前多停留一会儿的你。</p>
-      <div class="preface-note">
-        <div class="reveal"><h4>从拍下的每一张图开始</h4><p>完整保留笔记中的 186 条现场图像记录，并补充 ${nExtra} 张当天拍摄、笔记未收录的照片，全部按现场参观顺序陈列：作品、局部、展签、墙文、器物及档案。照片数量并不等于艺术作品数量。</p></div>
-        <div class="reveal"><h4>先读思想，再回到每一幅画</h4><p>十二节导论介绍生平、艺术学习与思想问题。展览沿官方 32 个单元的展线推进，本站按笔记分为 13 章，每幅作品都附有观察与短解，并另有 121 篇深读，讲解形式选择、鉴赏意义与比较练习。</p></div>
-        <div class="reveal"><h4>事实、图像与解读各有位置</h4><p>带《书名号》的题名、年份和媒介尽量依据可辨展签；其他标题是便于阅读的画面描述。分析与比较是本册的解读，不冒充艺术家原话。</p></div>
+      <p class="kicker reveal">The Exhibition</p>
+      <h2 class="room-title reveal">乔治·莫兰迪：独白</h2>
+      <div class="facts reveal">
+        <div><b>6.17 — 10.28</b><span>2026 年展期</span></div>
+        <div><b>200+</b><span>件展品</span></div>
+        <div><b>140+</b><span>件莫兰迪原作</span></div>
+        <div><b>32</b><span>个展区单元</span></div>
       </div>
-    </div>
-  </section>
-  <section class="room alt" id="timeline">
-    <div class="room-inner">
-      <p class="kicker reveal">A Life in Brief</p>
-      <h2 class="room-title reveal">生平与创作线索</h2>
-      <div class="timeline reveal">${D.timeline.map((t) => `<div class="tl-item"><div class="tl-y">${esc(t.y)}</div><div class="tl-h">${esc(t.h)}</div><div class="tl-t">${esc(t.t)}</div></div>`).join('')}</div>
-    </div>
-  </section>
-  <section class="room" id="keywords">
-    <div class="room-inner">
-      <p class="kicker reveal">Ways of Looking</p>
-      <h2 class="room-title reveal">六个观看关键词 · 先看见，再命名</h2>
-      <div class="keywords reveal">${D.keywords.map((k) => `<div class="kw"><div class="n">${esc(k.n)}</div><h4>${esc(k.h)}</h4><p>${esc(k.t)}</p><div class="ex">${linkFigs(esc(k.ex))}</div></div>`).join('')}</div>
-    </div>
-  </section>
-  <section class="room alt" id="intros">
-    <div class="room-inner">
-      <p class="kicker reveal">Life, Art &amp; a Way of Seeing</p>
-      <h2 class="room-title reveal">十二节导论：生平与艺术哲学</h2>
-      <p class="lead reveal">先读思想，再进入展厅。每节导论都可以跳到对应的现场照片。</p>
-      <div class="intro-grid">${D.intros.map((it, i) => `<button class="intro-card reveal" data-intro="${i}"><span class="n">${esc(it.n)}</span><span class="t">${esc(it.title)}</span><span class="l">${esc(it.lead)}</span></button>`).join('')}</div>
+      <div class="prose reveal">${F.exhibition.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
+      <p class="about-site reveal">${esc(F.about_site)}</p>
     </div>
   </section>`;
 
-  // 13 halls
-  D.chapters.forEach((c, ci) => {
-    const works = figs.filter((f) => f.chapter === c.n);
-    const id = 'hall-' + c.n;
-    rooms.push({ id, n: c.n, title: c.title, range: c.range, units: unitsIn(works) });
+  // 认识莫兰迪
+  rooms.push({ id: 'artist', n: '人', title: '认识莫兰迪', range: '生平 · 学者怎么看他' });
+  html += `
+  <section class="room alt" id="artist" data-name="认识莫兰迪">
+    <div class="room-inner">
+      <p class="kicker reveal">Giorgio Morandi, 1890–1964</p>
+      <h2 class="room-title reveal">认识莫兰迪</h2>
+      <div class="prose reveal">${F.artist.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
+      <div class="timeline reveal">${D.timeline.map((t) => `<div class="tl-item"><div class="tl-y">${esc(t.y)}</div><div class="tl-h">${esc(t.h)}</div><div class="tl-t">${esc(t.t)}</div></div>`).join('')}</div>
+      <h3 class="sub-title reveal">他们怎么看莫兰迪</h3>
+      <div class="scholars">${F.scholars.map(([h, t]) => `<div class="scholar reveal"><h4>${esc(h)}</h4><p>${esc(t)}</p></div>`).join('')}</div>
+    </div>
+  </section>`;
+
+  // 展厅
+  let floor = 0, alt = false;
+  D.units.forEach((u) => {
+    const works = figs.filter((f) => unitOfKey(f.key) === u);
+    if (!works.length) return;
+    if (u.floor !== floor) {
+      floor = u.floor;
+      html += `<div class="floor-mark" id="floor-${floor}"><span>${floor === 1 ? '一楼' : '二楼'}</span><em>${floor === 1 ? '工作室摄影 · 影像' : '主展线 · 第 1—32 单元'}</em></div>`;
+    }
+    alt = !alt;
+    const id = 'unit-' + u.from;
+    rooms.push({ id, n: u.no || '·', title: u.cn, range: u.en, floor: u.floor });
+    const compares = (D.compares || []).filter((c) => c.pairs.length && works.some((w) => w.num === c.pairs[c.pairs.length - 1].num));
     html += `
-    <section class="room hall ${ci % 2 ? 'alt' : ''}" id="${id}" data-name="第 ${c.n} 章 · ${esc(c.title)}">
+    <section class="room hall ${alt ? '' : 'alt'}" id="${id}" data-name="${esc(unitName(u))}">
       <div class="room-inner">
         <div class="hall-head reveal">
-          <div class="hall-no">${c.n}</div>
-          <div><div class="hall-range">第 ${c.n} 章 · ${esc(c.range)} · 官方单元 ${unitsIn(works).map((u) => u.no || u.cn).join('、')}</div><h2 class="room-title">${esc(c.title)}</h2></div>
-        </div>
-        <div class="hall-intro reveal">${c.intro.filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('')}</div>
-      </div>
-      ${unitsIn(works).map((u) => `
-      <div class="unit reveal" id="unit-${u.from}">
-        <div class="room-inner unit-head">
-          <span class="unit-no">${u.no ? esc(u.no) : '—'}</span>
+          <div class="hall-no">${u.no ? esc(u.no) : '·'}</div>
           <div>
-            <div class="unit-cn">${esc(u.cn)}</div>
-            ${u.en ? `<div class="unit-en">${esc(u.en)}</div>` : ''}
-            <div class="unit-meta">${u.no ? `官方第 ${esc(u.no)} 单元` : '无编号展区'} · ${u.works.length} 张照片${u.works.some((w) => w.extra) ? ` · 含 ${u.works.filter((w) => w.extra).length} 张补充照片` : ''}</div>
+            <div class="hall-range">${u.no ? `第 ${esc(u.no)} 单元` : (u.floor === 1 ? '一楼' : '二楼')}</div>
+            <h2 class="room-title">${esc(u.cn)}</h2>
+            ${u.en ? `<div class="hall-en">${esc(u.en)}</div>` : ''}
           </div>
         </div>
-        <div class="wall-wrap">
-          <button class="wall-btn prev" aria-label="向左">‹</button>
-          <div class="wall">${u.works.map(workHTML).join('')}</div>
-          <button class="wall-btn next" aria-label="向右">›</button>
-        </div>
-      </div>`).join('')}
-      <div class="wall-hint">← 左右滑动浏览每面墙 · 点击画作近看 →</div>
-      <div class="room-inner">${D.compares.filter((x) => x.after === c.n).map(compareHTML).join('')}</div>
+        ${u.intro ? `<div class="hall-intro reveal"><p>${esc(u.intro)}</p></div>` : ''}
+      </div>
+      <div class="wall-wrap reveal">
+        <button class="wall-btn prev" aria-label="向左">‹</button>
+        <div class="wall">${works.map(workHTML).join('')}</div>
+        <button class="wall-btn next" aria-label="向右">›</button>
+      </div>
+      ${works.length > 2 ? '<div class="wall-hint">← 左右滑动 · 点击作品看介绍 →</div>' : ''}
+      <div class="room-inner">${compares.map(compareHTML).join('')}</div>
     </section>`;
   });
 
-  // 尾厅
-  rooms.push({ id: 'exit', n: '尾', title: '离开展厅之后', range: '六个判断 · 五分钟再看一幅画' });
+  // 离开展厅之后
+  rooms.push({ id: 'exit', n: '尾', title: '离开展厅之后', range: '六个判断 · 怎样再看一幅莫兰迪' });
   html += `
-  <section class="room dark" id="exit" data-name="尾厅 · 离开展厅之后">
+  <section class="room dark" id="exit" data-name="离开展厅之后">
     <div class="room-inner">
-      <p class="kicker reveal">Six Ideas to Keep</p>
+      <p class="kicker reveal">After the Exhibition</p>
       <h2 class="room-title reveal">走完整场展览，留下六个判断</h2>
       <div class="ideas">${D.ideas.map((x, i) => `<div class="idea reveal"><div class="n">0${i + 1}</div><h4>${esc(x.h)}</h4><p>${linkFigs(esc(x.t))}</p></div>`).join('')}</div>
       <p class="kicker reveal" style="margin-top:96px">A Five-Minute Look</p>
       <h2 class="room-title reveal">怎样再看一幅莫兰迪</h2>
       <div class="five reveal">${D.five.map((x) => `<div class="five-row"><h5>${esc(x.h)}</h5><p>${esc(x.t)}</p></div>`).join('')}</div>
     </div>
+  </section>`;
+
+  // 延伸阅读
+  rooms.push({ id: 'reading', n: '读', title: '延伸阅读', range: '观看关键词 · 十二篇导读 · 参考文献' });
+  html += `
+  <section class="room" id="reading" data-name="延伸阅读">
+    <div class="room-inner">
+      <p class="kicker reveal">Further Reading</p>
+      <h2 class="room-title reveal">六个观看关键词</h2>
+      <div class="keywords reveal">${D.keywords.map((k) => `<div class="kw"><div class="n">${esc(k.n)}</div><h4>${esc(k.h)}</h4><p>${esc(k.t)}</p><div class="ex">${linkFigs(esc(k.ex))}</div></div>`).join('')}</div>
+      <h2 class="room-title reveal" style="margin-top:96px">十二篇导读：生平与艺术哲学</h2>
+      <div class="intro-grid">${D.intros.map((it, i) => `<button class="intro-card reveal" data-intro="${i}"><span class="n">${esc(it.n)}</span><span class="t">${esc(it.title)}</span><span class="l">${esc(it.lead)}</span></button>`).join('')}</div>
+      <h2 class="room-title reveal" style="margin-top:96px">参考文献</h2>
+      <ul class="refs-list reveal">${D.references.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+    </div>
   </section>
   <section class="closing">
     <blockquote class="reveal">一个有限的世界，<br>可以被无限次地<br>重新看见。</blockquote>
-    <p class="reveal">邓奔奔的莫兰迪观展笔记 · 上海浦东美术馆 · 2026 年 9 月 9 日</p>
+    <p class="reveal">邓奔奔 · 上海浦东美术馆 · 2026 年 9 月 9 日</p>
     <p class="reveal" style="margin-top:8px;font-size:11px;letter-spacing:.1em">图像均为现场拍摄 · 背景音乐为本站原创生成</p>
-    <button class="btn-ghost reveal" id="backTop">回到序厅</button>
+    <button class="btn-ghost reveal" id="backTop">回到开头</button>
   </section>`;
 
   museum.innerHTML = html;
 
-  function unitsIn(works) {
-    return D.units.map((u) => ({ ...u, works: works.filter((w) => w.key >= u.from && w.key < u.to + 1) })).filter((u) => u.works.length);
-  }
-  function unitOf(num) { const k = D.figures[num].key; return D.units.find((u) => k >= u.from && k < u.to + 1); }
   function workHTML(f) {
     const [w, h] = f.size || [3, 4];
-    return `<button class="work" data-fig="${f.num}" aria-label="${figLabel(f)} ${esc(f.title)}">
+    return `<button class="work" data-fig="${f.num}" aria-label="${esc(f.title)}">
       <div class="frame" style="aspect-ratio:${w}/${h}"><img data-src="thumb/${f.num}.jpg" alt="${esc(f.title)}" width="${w}" height="${h}"></div>
-      <div class="label"><span class="no">${figLabel(f)} · ${esc(f.type)}</span><span class="ti">${esc(f.title)}</span>${esc(f.sub)}${f.hasDeep ? '<br><span class="deep">含逐画精讲</span>' : ''}</div>
+      <div class="label">${f.kind ? `<span class="no">${esc(f.kind)}</span>` : ''}<span class="ti">${esc(f.title)}</span>${f.sub ? `<span class="sb">${esc(f.sub)}</span>` : ''}${D.deep[f.num] ? '<span class="deep">有细读</span>' : ''}</div>
     </button>`;
   }
   function compareHTML(c) {
     return `<div class="compare reveal">
-      <p class="kicker">比较专题</p><h3>${esc(c.title)}</h3>
-      <div class="compare-pair">${c.pairs.map((p) => `<button data-fig="${p.num}"><img data-src="thumb/${p.num}.jpg" alt="图 ${p.num}"><div class="cap"><b>图 ${p.num}</b>${esc(p.cap)}</div></button>`).join('')}</div>
+      <p class="kicker">比较</p><h3>${esc(c.title)}</h3>
+      <div class="compare-pair">${c.pairs.filter((p) => D.figures[p.num]).map((p) => `<button data-fig="${p.num}"><img data-src="thumb/${p.num}.jpg" alt="${esc(D.figures[p.num].title)}"><div class="cap"><b>${esc(D.figures[p.num].title)}</b>${esc(p.cap)}</div></button>`).join('')}</div>
       <div class="compare-text">${c.text.filter(Boolean).map((t) => `<p>${linkFigs(esc(t))}</p>`).join('')}</div>
     </div>`;
   }
   function linkFigs(s) {
-    return s.replace(/图\s?(\d{3})/g, (m, n) => D.figures[n] ? `<a href="#fig-${n}" data-fig="${n}" style="color:inherit;text-decoration:underline;text-decoration-color:rgba(169,120,92,.6);text-underline-offset:3px">${m}</a>` : m);
+    return s.replace(/图\s?(\d{3})/g, (m, n) => D.figures[n] ? `<a href="#fig-${n}" data-fig="${n}" class="figlink">${m}</a>` : m);
   }
 
   /* ---------------- lazy images & reveal ---------------- */
@@ -141,18 +149,16 @@
   }, { rootMargin: '400px 600px' });
   document.querySelectorAll('img[data-src]').forEach((i) => io.observe(i));
   document.querySelectorAll('.compare-pair img').forEach((i) => i.classList.add('loaded'));
-
-  const ro = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: 0.08 });
+  const ro = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: 0.06 });
   document.querySelectorAll('.reveal').forEach((el) => ro.observe(el));
 
-  /* ---------------- walls ---------------- */
   document.querySelectorAll('.wall-wrap').forEach((w) => {
     const wall = $('.wall', w);
     $('.prev', w).onclick = () => wall.scrollBy({ left: -wall.clientWidth * 0.7, behavior: 'smooth' });
     $('.next', w).onclick = () => wall.scrollBy({ left: wall.clientWidth * 0.7, behavior: 'smooth' });
   });
 
-  /* ---------------- topbar: hall name, progress, map ---------------- */
+  /* ---------------- topbar & map ---------------- */
   const hallName = $('#hallName'), progress = $('#progress');
   const sections = [...document.querySelectorAll('section[data-name]')];
   let current = '';
@@ -162,14 +168,19 @@
     for (const sec of sections) if (sec.offsetTop <= y) s = sec;
     if (s.dataset.name !== current) {
       current = s.dataset.name; hallName.textContent = current;
-      document.querySelectorAll('#mapList a').forEach((a) => a.classList.toggle('here', s.id === a.getAttribute('href').slice(1) || (s.id.startsWith('hall') === false && a.getAttribute('href') === '#preface' && ['timeline', 'keywords', 'intros'].includes(s.id))));
+      document.querySelectorAll('#mapList a').forEach((a) => a.classList.toggle('here', a.getAttribute('href') === '#' + s.id));
     }
     const max = document.documentElement.scrollHeight - window.innerHeight;
     progress.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
   }
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  $('#mapList').innerHTML = rooms.map((r) => `<li><a href="#${r.id}"><span class="n">${r.n}</span><span class="t">${esc(r.title)}</span><span class="r">${esc(r.range)}</span></a>${r.units ? `<ul class="map-units">${r.units.map((u) => `<li><a href="#unit-${u.from}"><b>${u.no ? esc(u.no) : '—'}</b>${esc(u.cn)}</a></li>`).join('')}</ul>` : ''}</li>`).join('');
+  let lastFloor = null;
+  $('#mapList').innerHTML = rooms.map((r) => {
+    let head = '';
+    if (r.floor && r.floor !== lastFloor) { lastFloor = r.floor; head = `<li class="map-floor">${r.floor === 1 ? '一楼' : '二楼'}</li>`; }
+    return `${head}<li><a href="#${r.id}"><span class="n">${esc(r.n)}</span><span class="t">${esc(r.title)}</span><span class="r">${esc(r.range)}</span></a></li>`;
+  }).join('');
   const map = $('#map');
   $('#mapBtn').onclick = () => { map.hidden = false; };
   $('#mapClose').onclick = () => { map.hidden = true; };
@@ -190,13 +201,8 @@
     bgm.volume = 0;
     const p = bgm.play();
     if (p) p.then(() => { musicBtn.classList.add('playing'); fadeTo(0.55); }).catch(() => {});
-    try { localStorage.setItem('morandi-music', '1'); } catch (e) {}
   }
-  function stopMusic() {
-    musicBtn.classList.remove('playing');
-    fadeTo(0, () => bgm.pause());
-    try { localStorage.setItem('morandi-music', '0'); } catch (e) {}
-  }
+  function stopMusic() { musicBtn.classList.remove('playing'); fadeTo(0, () => bgm.pause()); }
   musicBtn.onclick = () => (bgm.paused || !musicBtn.classList.contains('playing') ? playMusic() : stopMusic());
 
   /* ---------------- entrance ---------------- */
@@ -209,7 +215,7 @@
   }
   $('#enterWithMusic').onclick = () => enter(true);
   $('#enterSilent').onclick = () => enter(false);
-  $('#backTop').onclick = () => $('#preface').scrollIntoView({ behavior: 'smooth' });
+  $('#backTop').onclick = () => $('#about').scrollIntoView({ behavior: 'smooth' });
 
   /* ---------------- viewer ---------------- */
   const viewer = $('#viewer'), vImg = $('#vImg'), vText = $('#vText'), vCount = $('#vCount');
@@ -218,53 +224,47 @@
     const i = order.indexOf(num);
     if (i < 0) return;
     idx = i;
-    const f = D.figures[num], dp = D.deep[num];
-    const ch = D.chapters.find((c) => c.n === f.chapter);
+    const f = D.figures[num], dp = D.deep[num], u = unitOf(num);
     viewer.hidden = false; document.body.classList.add('locked');
     vImg.classList.add('fading');
     const img = new Image();
     img.onload = () => { vImg.src = img.src; vImg.alt = f.title; vImg.classList.remove('fading'); };
     img.src = `img/${num}.jpg`;
     vCount.textContent = `${i + 1} / ${order.length}`;
-    const secs = f.secs.filter((s) => s[0] !== '再看一眼' && s[0] !== '对照原图');
+    const secs = f.secs.filter((s) => s[0] !== '再看一眼');
     const look = f.secs.find((s) => s[0] === '再看一眼');
     vText.innerHTML = `
-      <div class="tag">第 ${f.chapter} 章 · ${esc(ch ? ch.title : '')}</div>
-      ${(u => u ? `<div class="tag" style="margin-top:4px">${u.no ? `官方第 ${esc(u.no)} 单元` : '序章'} · ${esc(u.cn)}${u.en ? ' · ' + esc(u.en) : ''}</div>` : '')(unitOf(num))}
-      <div class="tag" style="margin-top:4px">${figLabel(f)} · ${esc(f.type)}</div>
+      ${u ? `<div class="tag">${esc(unitName(u))}</div>` : ''}
+      ${f.kind ? `<div class="tag kind">${esc(f.kind)}</div>` : ''}
       <h2>${esc(f.title)}</h2>
-      <p class="sub">${esc(f.sub)}</p>
-      ${f.extra ? `<div class="look">这是观展当天拍摄、原观展笔记未收录的补充照片，已按拍摄顺序放回展线原位。带《书名号》的题名、年份与材质取自现场展签；其余为画面描述。下方文字为本站补写的解读，并非原观展笔记内容。</div>` : ''}
+      ${f.sub ? `<p class="sub">${esc(f.sub)}</p>` : '<div style="height:12px"></div>'}
       ${secs.map((s) => `<h3>${esc(s[0])}</h3><p>${linkFigs(esc(s[1]))}</p>`).join('')}
       ${look ? `<div class="look">再看一眼 · ${linkFigs(esc(look[1]))}</div>` : ''}
-      ${dp ? `<div class="deepread">
-        <div class="dk">逐画精讲 · DEEP LOOKING</div>
+      ${dp && dp.secs.length ? `<div class="deepread">
+        <div class="dk">细读 · DEEP LOOKING</div>
         <h4>${esc(dp.headline)}</h4>
         ${dp.secs.map((s, k) => `<div class="sec"><span class="i">0${k + 1}</span><div><h5>${esc(s[0])}</h5><p>${linkFigs(esc(s[1]))}</p></div></div>`).join('')}
-        ${dp.refs.length ? `<div class="refs">对照原图 ${dp.refs.map((r) => `<button data-fig="${r}">图 ${r}</button>`).join('')}</div>` : ''}
+        ${dp.refs.length ? `<div class="refs">对照 ${dp.refs.map((r) => `<button data-fig="${r}">${esc(D.figures[r].title)}</button>`).join('')}</div>` : ''}
       </div>` : ''}`;
     vText.scrollTop = 0;
     if (push) history.replaceState(null, '', '#fig-' + num);
-    // preload neighbours
     [order[i + 1], order[i - 1]].forEach((n) => { if (n) new Image().src = `img/${n}.jpg`; });
     if (auto) startTimer();
   }
   function closeViewer() {
     viewer.hidden = true; document.body.classList.remove('locked'); stopAuto();
     history.replaceState(null, '', location.pathname + location.search);
-    // scroll the wall so the last viewed work is visible
     const el = document.querySelector(`.work[data-fig="${order[idx]}"]`);
-    if (el) { el.scrollIntoView({ block: 'center', inline: 'center' }); }
+    if (el) el.scrollIntoView({ block: 'center', inline: 'center' });
   }
   const step = (d) => openFig(order[(idx + d + order.length) % order.length]);
   $('#vPrev').onclick = () => step(-1);
   $('#vNext').onclick = () => step(1);
   $('#vClose').onclick = closeViewer;
 
-  // auto tour
   const vAuto = $('#vAuto'), vTimer = $('#vTimer');
   let timerStart = 0, raf;
-  function durFor() { return Math.min(26000, 9000 + vText.textContent.length * 18); }
+  const durFor = () => Math.min(26000, 7000 + vText.textContent.length * 18);
   function startTimer() {
     cancelAnimationFrame(raf);
     timerStart = performance.now();
@@ -272,7 +272,6 @@
     const tick = (t) => {
       const p = (t - timerStart) / dur;
       vTimer.style.width = Math.min(100, p * 100) + '%';
-      // gently scroll the text along with the timer
       const max = vText.scrollHeight - vText.clientHeight;
       if (max > 0 && p > 0.15) vText.scrollTop = Math.min(max, max * (p - 0.15) / 0.8);
       if (p >= 1) { step(1); return; }
@@ -289,7 +288,6 @@
   };
   vText.addEventListener('wheel', () => { if (auto) timerStart = performance.now() - durFor() * 0.1; }, { passive: true });
 
-  // swipe on image (mobile)
   let sx = null;
   $('.viewer-stage').addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
   $('.viewer-stage').addEventListener('touchend', (e) => {
@@ -297,34 +295,31 @@
     if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
   });
 
-  /* ---------------- reader (intros) ---------------- */
+  /* ---------------- reader (导读) ---------------- */
   const reader = $('#reader'), rBody = $('#rBody');
   function openIntro(i) {
     const it = D.intros[i];
     rBody.innerHTML = `
-      <p class="kicker">导论 · Life &amp; Artistic Thought</p>
+      <p class="kicker">导读</p>
       <div class="n">${esc(it.n)}</div>
       <h2>${esc(it.title)}</h2>
       <p class="lead">${esc(it.lead)}</p>
       ${it.secs.map((s) => `<h3>${esc(s[0])}</h3><p>${linkFigs(esc(s[1]))}</p>`).join('')}
-      ${it.refs.length ? `<div class="refs" style="margin-top:40px">对照原图 ${it.refs.map((r) => `<button data-fig="${r}">图 ${r}</button>`).join('')}</div>` : ''}
+      ${it.refs.length ? `<div class="refs" style="margin-top:40px">相关作品 ${it.refs.map((r) => `<button data-fig="${r}">${esc(D.figures[r].title)}</button>`).join('')}</div>` : ''}
       <div class="reader-nav">
-        ${i > 0 ? `<button data-intro="${i - 1}">‹ 导论 ${esc(D.intros[i - 1].n)}</button>` : '<span></span>'}
-        ${i < D.intros.length - 1 ? `<button data-intro="${i + 1}">导论 ${esc(D.intros[i + 1].n)} ›</button>` : `<button data-go="hall-01">进入第 01 章 ›</button>`}
+        ${i > 0 ? `<button data-intro="${i - 1}">‹ ${esc(D.intros[i - 1].n)}</button>` : '<span></span>'}
+        ${i < D.intros.length - 1 ? `<button data-intro="${i + 1}">${esc(D.intros[i + 1].n)} ›</button>` : '<span></span>'}
       </div>`;
     reader.hidden = false; reader.scrollTop = 0; document.body.classList.add('locked');
   }
   function closeReader() { reader.hidden = true; if (viewer.hidden) document.body.classList.remove('locked'); }
   $('#rClose').onclick = closeReader;
 
-  /* ---------------- global clicks & keys ---------------- */
   document.addEventListener('click', (e) => {
     const f = e.target.closest('[data-fig]');
     if (f) { e.preventDefault(); if (!reader.hidden) reader.hidden = true; openFig(f.dataset.fig); return; }
     const it = e.target.closest('[data-intro]');
-    if (it) { openIntro(+it.dataset.intro); return; }
-    const go = e.target.closest('[data-go]');
-    if (go) { closeReader(); document.getElementById(go.dataset.go).scrollIntoView({ behavior: 'smooth' }); }
+    if (it) openIntro(+it.dataset.intro);
   });
   document.addEventListener('keydown', (e) => {
     if (!viewer.hidden) {
@@ -336,9 +331,8 @@
     else if (!map.hidden && e.key === 'Escape') map.hidden = true;
   });
 
-  // deep link: #fig-123 opens that work directly (after entering)
   const m = location.hash.match(/^#fig-(s?\d{3,4})$/);
   document.body.classList.add('locked');
-  if (m) { entrance.hidden = true; document.body.classList.remove('locked'); openFig(m[1], false); }
+  if (m && D.figures[m[1]]) { entrance.hidden = true; document.body.classList.remove('locked'); openFig(m[1], false); }
   onScroll();
 })();
