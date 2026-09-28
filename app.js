@@ -192,16 +192,25 @@
   }
 
   /* ---------------- lazy images & reveal ---------------- */
+  // 以“整面墙 / 整个区块”为单位提前加载：一面墙接近屏幕（约一屏半之内）时，墙上所有画一起开始下载，
+  // 左右滑动时不必再等。先绑定 onload 再设 src，已缓存的图片也会正确显示。
+  function loadImg(img) {
+    if (!img.dataset.src) return;
+    const done = () => img.classList.add('loaded');
+    img.onload = done; img.onerror = done;
+    img.src = img.dataset.src;
+    delete img.dataset.src;
+    if (img.complete && img.naturalWidth) done();
+  }
   const io = new IntersectionObserver((ents) => {
     ents.forEach((e) => {
       if (!e.isIntersecting) return;
-      const img = e.target;
-      img.src = img.dataset.src;
-      img.onload = () => img.classList.add('loaded');
-      io.unobserve(img);
+      e.target.querySelectorAll('img[data-src]').forEach(loadImg);
+      io.unobserve(e.target);
     });
-  }, { rootMargin: '400px 600px' });
-  document.querySelectorAll('img[data-src]').forEach((i) => io.observe(i));
+  }, { rootMargin: '150% 0px' });
+  document.querySelectorAll('.wall-wrap, .compare, .key-work').forEach((b) => io.observe(b));
+  document.querySelectorAll('img[data-src]').forEach((img) => { if (!img.closest('.wall-wrap, .compare, .key-work')) loadImg(img); });
   document.querySelectorAll('.compare-pair img, .key-img img').forEach((i) => i.classList.add('loaded'));
   const ro = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: 0.06 });
   document.querySelectorAll('.reveal').forEach((el) => ro.observe(el));
