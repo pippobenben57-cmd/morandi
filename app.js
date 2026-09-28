@@ -113,7 +113,7 @@
   <section class="closing">
     <blockquote class="reveal">一个有限的世界，<br>可以被无限次地<br>重新看见。</blockquote>
     <p class="reveal">邓奔奔 · 上海浦东美术馆 · 2026 年 9 月 9 日</p>
-    <p class="reveal" style="margin-top:8px;font-size:11px;letter-spacing:.1em">图像均为现场拍摄 · 背景音乐为本站原创生成</p>
+    <p class="reveal" style="margin-top:8px;font-size:11px;letter-spacing:.1em">图像均为现场拍摄 · 背景音乐：巴赫《哥德堡变奏曲》咏叹调，石坂公美子演奏（Open Goldberg Variations，CC0 公共领域）</p>
     <button class="btn-ghost reveal" id="backTop">回到开头</button>
   </section>`;
 
@@ -188,6 +188,10 @@
 
   /* ---------------- music ---------------- */
   const bgm = $('#bgm'), musicBtn = $('#musicBtn');
+  // 背景音乐：巴赫《哥德堡变奏曲》咏叹调 → 咏叹调返始，交替循环
+  const tracks = ['audio/aria.mp3', 'audio/aria_dacapo.mp3'];
+  let track = 0;
+  bgm.addEventListener('ended', () => { track = (track + 1) % tracks.length; bgm.src = tracks[track]; bgm.play().catch(() => {}); });
   let fadeT;
   function fadeTo(v, done) {
     clearInterval(fadeT);
