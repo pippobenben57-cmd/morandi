@@ -342,3 +342,33 @@ main { padding-top: var(--topbar); }
 .map-floor { font-family: var(--serif); letter-spacing: .3em; color: var(--muted); font-size: 13px; padding: 22px 0 4px; }
 .viewer-text .tag.kind { color: #c89a7c; margin-top: 4px; }
 .viewer-text p { white-space: pre-line; }
+
+/* ---------- v3: 开场画、精选导览、终场、声音设置 ---------- */
+.opening { padding-top: 10vh; text-align: center; }
+.key-work { margin: 24px auto 0; max-width: 760px; }
+.key-img { display: block; margin: 0 auto; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.key-img img { max-height: 62vh; width: auto; margin: 0 auto; box-shadow: 0 40px 60px -36px rgba(40,30,20,.55); }
+.key-work figcaption { margin-top: 18px; font-size: 13px; color: var(--muted); letter-spacing: .05em; }
+.key-q { font-family: var(--serif); font-size: clamp(20px, 3vw, 26px); line-height: 1.9; margin: 40px auto 0; max-width: 640px; }
+.paths { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 44px; }
+.path { display: flex; flex-direction: column; gap: 4px; min-width: 240px; max-width: 340px; flex: 1 1 240px; padding: 18px 22px; text-align: left; text-decoration: none; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; transition: .25s; }
+.path:hover { border-color: var(--accent); transform: translateY(-2px); }
+.path b { font-family: var(--serif); font-weight: 400; font-size: 19px; letter-spacing: .12em; }
+.path span { font-size: 13px; color: var(--muted); }
+.path.light { background: rgba(255,255,255,.06); border-color: #4a4640; color: #efe9df; }
+.path.light span { color: #a69d91; }
+.finale { text-align: center; }
+.finale .key-q { color: #efe9df; }
+.finale .key-work figcaption { color: #8c8377; }
+.closing-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
+.closing-actions .btn-ghost { margin-top: 0; }
+.tour-q { font-family: var(--serif); font-size: 19px; line-height: 1.8; color: #efe9df; background: rgba(200,154,124,.12); border-left: 2px solid #c89a7c; padding: 16px 18px; margin-bottom: 26px; }
+.tour-end { display: flex; gap: 10px; flex-wrap: wrap; margin: -10px 0 28px; }
+.viewer.touring .v-timer { background: #efe9df; }
+.sound-set { border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 6px; }
+.sound-h { font-family: var(--serif); letter-spacing: .3em; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.sound-set button { display: block; width: 100%; text-align: left; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
+.sound-set button b { display: block; font-weight: 500; font-size: 14px; }
+.sound-set button span { font-size: 12px; color: var(--muted); }
+.sound-set button.on { border-color: var(--accent); background: rgba(169,120,92,.08); }
+.sound-set button.on b::after { content: " ✓"; color: var(--accent); }
