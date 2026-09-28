@@ -1,4 +1,5 @@
 (function () {
+  if (window.__morandiStarted) return; window.__morandiStarted = true;
   const D = window.EXHIBIT;
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
